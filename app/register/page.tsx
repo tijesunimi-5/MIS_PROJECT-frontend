@@ -3,7 +3,8 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '../../lib/api';
+import  {api}  from '../../lib/api';
+import { cryptoUtils } from '../../lib/crypto';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -25,8 +26,12 @@ export default function RegisterPage() {
     setError('');
 
     try {
+      // 🔒 Securely encrypt the password block before network transport
+      const securePassword = cryptoUtils.encryptPassword(form.password);
+
       const payload = {
         ...form,
+        password: securePassword, // Transmit pure ciphertext instead of raw plaintext
         current_level: form.role === 'student' ? Number(form.current_level) : undefined,
         matric_no: form.role === 'student' ? form.matric_no : undefined,
         department: form.role === 'student' ? form.department : undefined,

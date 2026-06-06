@@ -4,6 +4,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
+import { cryptoUtils } from '../../lib/crypto';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,7 +19,13 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await api.auth.login({ email, password });
+      // 🔒 Securely encrypt raw passphrase input string to compare directly with Postgres data rows
+      const securePassword = cryptoUtils.encryptPassword(password);
+
+      const res = await api.auth.login({
+        email,
+        password: securePassword // Match ciphertext perfectly string-for-string
+      });
 
       // Persist values token and base profiles locally
       localStorage.setItem('token', res.token);
