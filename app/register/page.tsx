@@ -3,8 +3,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import  {api}  from '../../lib/api';
-import { cryptoUtils } from '../../lib/crypto';
+import { api } from '../../lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -26,12 +25,12 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      // 🔒 Securely encrypt the password block before network transport
-      const securePassword = cryptoUtils.encryptPassword(form.password);
+      // 🔒 Native Browser Base64 Encoding (No external package required!)
+      const base64Password = window.btoa(form.password);
 
       const payload = {
         ...form,
-        password: securePassword, // Transmit pure ciphertext instead of raw plaintext
+        password: base64Password, // Sends clean Base64 ciphertext straight to Postgres
         current_level: form.role === 'student' ? Number(form.current_level) : undefined,
         matric_no: form.role === 'student' ? form.matric_no : undefined,
         department: form.role === 'student' ? form.department : undefined,
@@ -117,7 +116,7 @@ export default function RegisterPage() {
           </div>
 
           {form.role === 'student' && (
-            <div className="p-4 bg-[#1F2937]/30 border border-gray-800 rounded-xl space-y-4 animate-fadeIn">
+            <div className="p-4 bg-[#1F2937]/30 border border-gray-800 rounded-xl space-y-4">
               <h4 className="text-xs font-bold uppercase tracking-wider text-indigo-400">Academic Affiliation details</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -159,7 +158,7 @@ export default function RegisterPage() {
 
           <button
             type="submit" disabled={loading}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg disabled:opacity-50"
+            className="w-full py-3.5 px-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg disabled:opacity-50"
           >
             {loading ? 'Initializing Core Profile...' : 'Complete System Registration'}
           </button>
