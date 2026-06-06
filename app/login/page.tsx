@@ -4,7 +4,6 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
-import { cryptoUtils } from '../../lib/crypto';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,19 +18,17 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // 🔒 Securely encrypt raw passphrase input string to compare directly with Postgres data rows
-      const securePassword = cryptoUtils.encryptPassword(password);
+      // 🔒 Native Browser Base64 Encoding matching registration format string comparisons
+      const base64Password = window.btoa(password);
 
-      const res = await api.auth.login({
-        email,
-        password: securePassword // Match ciphertext perfectly string-for-string
+      const res = await api.auth.login({ 
+        email, 
+        password: base64Password 
       });
 
-      // Persist values token and base profiles locally
       localStorage.setItem('token', res.token);
       localStorage.setItem('user', JSON.stringify(res.user));
 
-      // Route dynamically depending on Postgres relational roles
       if (res.user.role === 'admin') {
         router.push('/dashboard/admin');
       } else {
@@ -92,7 +89,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg disabled:opacity-50"
+            className="w-full py-3.5 px-4 bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-medium rounded-xl transition-all shadow-lg disabled:opacity-50"
           >
             {loading ? 'Authenticating Engine...' : 'Sign In To Portal'}
           </button>
