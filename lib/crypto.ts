@@ -2,7 +2,7 @@
 import CryptoJS from "crypto-js";
 
 const SECRET_KEY =
-  process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "SuperSecretCyberKey123!";
+  process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
 
 export const cryptoUtils = {
   /**

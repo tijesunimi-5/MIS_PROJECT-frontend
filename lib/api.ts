@@ -1,9 +1,9 @@
 // lib/api.ts
 import { AuthResponse, Course, ReportCardResponse } from "../types";
 
-// Replace this with your production Render backend URL when live
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://mis-project-backend.onrender.com/api";
 
 async function request<T>(
   endpoint: string,
@@ -35,7 +35,7 @@ async function request<T>(
 }
 
 export const api = {
-  // Authentication Namespace
+  // 1. Authentication Namespace
   auth: {
     register: (body: any) =>
       request<AuthResponse>("/auth/register", {
@@ -48,7 +48,17 @@ export const api = {
         body: JSON.stringify(body),
       }),
   },
-  // Courses Namespace
+
+  // 2. Students Roster Namespace (Separated from auth block correctly)
+  students: {
+    getRoster: () =>
+      request<{ student_id: number; name: string; matric_no: string }[]>(
+        "/auth/students-roster",
+        { method: "GET" },
+      ),
+  },
+
+  // 3. Courses Namespace
   courses: {
     getAll: () => request<Course[]>("/courses", { method: "GET" }),
     create: (body: {
@@ -61,7 +71,8 @@ export const api = {
         body: JSON.stringify(body),
       }),
   },
-  // Results / CGPA Namespace
+
+  // 4. Results Namespace
   results: {
     uploadScore: (body: {
       student_id: number;

@@ -1,3 +1,4 @@
+// app/dashboard/admin/page.tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -5,10 +6,17 @@ import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
 import { Course } from '../../../types/index';
 
+interface StudentRosterItem {
+  student_id: number;
+  name: string;
+  matric_no: string;
+}
+
 export default function UnifiedAdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'scores' | 'courses'>('scores');
   const [courses, setCourses] = useState<Course[]>([]);
+  const [students, setStudents] = useState<StudentRosterItem[]>([]);
 
   // Score form states
   const [scoreForm, setScoreForm] = useState({
@@ -30,18 +38,22 @@ export default function UnifiedAdminDashboard() {
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  // Load latest course catalogs on assembly hook execution
-  const syncCourseCatalog = async () => {
+  // Synchronize dropdown metadata lists from live PostgreSQL deployment instance
+  const syncDashboardData = async () => {
     try {
-      const data = await api.courses.getAll();
-      setCourses(data);
+      const [coursesData, studentsData] = await Promise.all([
+        api.courses.getAll(),
+        api.students.getRoster() // Hits our new relational selection join endpoint
+      ]);
+      setCourses(coursesData);
+      setStudents(studentsData);
     } catch (err) {
-      console.error('Error synchronizing academic records catalog:', err);
+      console.error('Error synchronizing admin metadata records catalog:', err);
     }
   };
 
   useEffect(() => {
-    syncCourseCatalog();
+    syncDashboardData();
   }, []);
 
   const handleScoreSubmit = async (e: React.FormEvent) => {
@@ -80,7 +92,7 @@ export default function UnifiedAdminDashboard() {
       });
       setMsg({ type: 'success', text: `New course metric ${courseForm.course_code.toUpperCase()} initialized into catalog index.` });
       setCourseForm({ course_code: '', course_title: '', unit_counts: '3' });
-      await syncCourseCatalog(); // Refresh list dropdown metrics live
+      await syncDashboardData(); // Refresh list parameters live
     } catch (err: any) {
       setMsg({ type: 'error', text: err.message || 'Error injecting course paper allocation parameters.' });
     } finally {
@@ -153,14 +165,23 @@ export default function UnifiedAdminDashboard() {
             <form onSubmit={handleScoreSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Student Relational ID</label>
-                  <input
-                    type="number" required min="1"
+                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                    Select Target Student
+                  </label>
+                  {/* 🎯 UPGRADED FROM UNIQUE ID INPUT TO DYNAMIC FILTERED ROSTER DROPDOWN */}
+                  <select
+                    required
                     value={scoreForm.student_id}
                     onChange={e => setScoreForm({ ...scoreForm, student_id: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 font-mono text-sm"
-                    placeholder="e.g. 1"
-                  />
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm text-gray-300"
+                  >
+                    <option value="">Choose student roster profile...</option>
+                    {students.map(s => (
+                      <option key={s.student_id} value={s.student_id}>
+                        {s.name} ({s.matric_no})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -238,6 +259,7 @@ export default function UnifiedAdminDashboard() {
           </div>
         )}
 
+        {/* TAB 2 CONTENT PANEL: COURSE REGISTRY */}
         {activeTab === 'courses' && (
           <div className="bg-[#111827] border border-gray-800 rounded-2xl p-8 shadow-xl space-y-6">
             <div>
