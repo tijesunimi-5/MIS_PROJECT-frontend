@@ -164,39 +164,60 @@ export default function UnifiedAdminDashboard() {
 
             <form onSubmit={handleScoreSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+                {/* 🎯 UPGRADED STUDENT SELECTION DROPDOWN (WIDER & PADDED FOR MOBILE VIEWPORTS) */}
+                <div className="w-full">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
                     Select Target Student
                   </label>
-                  {/* 🎯 UPGRADED FROM UNIQUE ID INPUT TO DYNAMIC FILTERED ROSTER DROPDOWN */}
-                  <select
-                    required
-                    value={scoreForm.student_id}
-                    onChange={e => setScoreForm({ ...scoreForm, student_id: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm text-gray-300"
-                  >
-                    <option value="">Choose student roster profile...</option>
-                    {students.map(s => (
-                      <option key={s.student_id} value={s.student_id}>
-                        {s.name} ({s.matric_no})
+                  <div className="relative">
+                    <select
+                      required
+                      value={scoreForm.student_id}
+                      onChange={e => setScoreForm({ ...scoreForm, student_id: e.target.value })}
+                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto"
+                    >
+                      <option value="" className="text-gray-400 bg-[#111827]">
+                        Choose student roster profile...
                       </option>
-                    ))}
-                  </select>
+                      {students.map(s => (
+                        <option
+                          key={s.student_id}
+                          value={s.student_id}
+                          className="text-gray-200 bg-[#111827] py-3 my-1 checked:bg-purple-600 focus:bg-purple-600 block"
+                        >
+                          {s.name} &nbsp;—&nbsp; [{s.matric_no}]
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Academic Course Allocation</label>
-                  <select
-                    required
-                    value={scoreForm.course_id}
-                    onChange={e => setScoreForm({ ...scoreForm, course_id: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm text-gray-300"
-                  >
-                    <option value="">Select validated course...</option>
-                    {courses.map(c => (
-                      <option key={c.id} value={c.id}>{c.course_code} — {c.course_title}</option>
-                    ))}
-                  </select>
+                {/* 🎯 UPGRADED COURSE ALLOCATION DROPDOWN (WIDER & PADDED FOR MOBILE VIEWPORTS) */}
+                <div className="w-full">
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
+                    Academic Course Allocation
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={scoreForm.course_id}
+                      onChange={e => setScoreForm({ ...scoreForm, course_id: e.target.value })}
+                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto"
+                    >
+                      <option value="" className="text-gray-400 bg-[#111827]">
+                        Select validated course...
+                      </option>
+                      {courses.map(c => (
+                        <option
+                          key={c.id}
+                          value={c.id}
+                          className="text-gray-200 bg-[#111827] py-3 block"
+                        >
+                          {c.course_code} &nbsp;—&nbsp; {c.course_title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -207,7 +228,7 @@ export default function UnifiedAdminDashboard() {
                     type="text" required
                     value={scoreForm.academic_year}
                     onChange={e => setScoreForm({ ...scoreForm, academic_year: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm"
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 text-sm text-white"
                     placeholder="2025/2026"
                   />
                 </div>
@@ -217,10 +238,10 @@ export default function UnifiedAdminDashboard() {
                   <select
                     value={scoreForm.semester}
                     onChange={e => setScoreForm({ ...scoreForm, semester: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 text-sm text-gray-300"
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 text-sm text-gray-300 appearance-auto"
                   >
-                    <option value="First">First / Harmattan Semester</option>
-                    <option value="Second">Second / Rain Semester</option>
+                    <option value="First" className="bg-[#111827]">First / Harmattan Semester</option>
+                    <option value="Second" className="bg-[#111827]">Second / Rain Semester</option>
                   </select>
                 </div>
               </div>
@@ -232,7 +253,7 @@ export default function UnifiedAdminDashboard() {
                     type="number" step="0.01" min="0" max="30" required
                     value={scoreForm.ca_score}
                     onChange={e => setScoreForm({ ...scoreForm, ca_score: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 font-mono text-amber-400 text-sm"
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 font-mono text-amber-400 text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -243,7 +264,7 @@ export default function UnifiedAdminDashboard() {
                     type="number" step="0.01" min="0" max="70" required
                     value={scoreForm.exam_score}
                     onChange={e => setScoreForm({ ...scoreForm, exam_score: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 font-mono text-indigo-400 text-sm"
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 font-mono text-indigo-400 text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -251,7 +272,7 @@ export default function UnifiedAdminDashboard() {
 
               <button
                 type="submit" disabled={submitting}
-                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl shadow-lg transition-all disabled:opacity-40"
+                className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl shadow-lg transition-all disabled:opacity-40 cursor-pointer"
               >
                 {submitting ? 'Updating Database Matrices...' : 'Push and Calculate Grades'}
               </button>
@@ -285,7 +306,7 @@ export default function UnifiedAdminDashboard() {
                     type="text" required
                     value={courseForm.course_title}
                     onChange={e => setCourseForm({ ...courseForm, course_title: e.target.value })}
-                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500"
+                    className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-purple-500 text-white"
                     placeholder="Advanced Relational Systems Engineering"
                   />
                 </div>
@@ -296,19 +317,19 @@ export default function UnifiedAdminDashboard() {
                 <select
                   value={courseForm.unit_counts}
                   onChange={e => setCourseForm({ ...courseForm, unit_counts: e.target.value })}
-                  className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-purple-500"
+                  className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-gray-300 focus:outline-none focus:border-purple-500 appearance-auto"
                 >
-                  <option value="1">1 Unit Weight</option>
-                  <option value="2">2 Unit Weight</option>
-                  <option value="3">3 Unit Weight</option>
-                  <option value="4">4 Unit Weight</option>
-                  <option value="5">5 Unit Weight</option>
+                  <option value="1" className="bg-[#111827]">1 Unit Weight</option>
+                  <option value="2" className="bg-[#111827]">2 Unit Weight</option>
+                  <option value="3" className="bg-[#111827]">3 Unit Weight</option>
+                  <option value="4" className="bg-[#111827]">4 Unit Weight</option>
+                  <option value="5" className="bg-[#111827]">5 Unit Weight</option>
                 </select>
               </div>
 
               <button
                 type="submit" disabled={submitting}
-                className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all disabled:opacity-40"
+                className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-semibold uppercase tracking-wider rounded-xl transition-all disabled:opacity-40 cursor-pointer"
               >
                 {submitting ? 'Registering Catalog Parameters...' : 'Inject Into Catalog Schema'}
               </button>

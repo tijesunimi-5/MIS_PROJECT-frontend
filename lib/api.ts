@@ -53,7 +53,7 @@ export const api = {
   students: {
     getRoster: () =>
       request<{ student_id: number; name: string; matric_no: string }[]>(
-        "/auth/students-roster",
+        "/results/students-roster",
         { method: "GET" },
       ),
   },
