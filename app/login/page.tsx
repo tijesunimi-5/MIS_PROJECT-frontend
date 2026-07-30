@@ -18,12 +18,9 @@ export default function LoginPage() {
     setError('');
 
     try {
-      // 🔒 Native Browser Base64 Encoding matching registration format string comparisons
-      const base64Password = window.btoa(password);
-
       const res = await api.auth.login({ 
         email, 
-        password: base64Password 
+        password 
       });
 
       localStorage.setItem('token', res.token);

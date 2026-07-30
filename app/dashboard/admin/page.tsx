@@ -4,19 +4,21 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '../../../lib/api';
-import { Course } from '../../../types/index';
-
-interface StudentRosterItem {
-  student_id: number;
-  name: string;
-  matric_no: string;
-}
+import { Course, StudentRosterItem } from '../../../types/index';
+import { cryptoUtils } from '../../../lib/crypto';
 
 export default function UnifiedAdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'scores' | 'courses'>('scores');
   const [courses, setCourses] = useState<Course[]>([]);
   const [students, setStudents] = useState<StudentRosterItem[]>([]);
+
+  // Lecturer Decryption Vault States
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState(false);
+  const [vaultKey, setVaultKey] = useState('');
+  const [showVaultModal, setShowVaultModal] = useState(false);
+  const [inputVaultKey, setInputVaultKey] = useState('');
+  const [vaultError, setVaultError] = useState('');
 
   // Score form states
   const [scoreForm, setScoreForm] = useState({
@@ -38,23 +40,71 @@ export default function UnifiedAdminDashboard() {
   const [msg, setMsg] = useState({ type: '', text: '' });
   const [submitting, setSubmitting] = useState(false);
 
-  // Synchronize dropdown metadata lists from live PostgreSQL deployment instance
+  // Synchronize dropdown metadata lists from backend
   const syncDashboardData = async () => {
     try {
       const [coursesData, studentsData] = await Promise.all([
         api.courses.getAll(),
-        api.students.getRoster() // Hits our new relational selection join endpoint
+        api.students.getRoster()
       ]);
       setCourses(coursesData);
       setStudents(studentsData);
     } catch (err) {
-      console.error('Error synchronizing admin metadata records catalog:', err);
+      console.error('Error synchronizing admin metadata catalog:', err);
     }
   };
 
   useEffect(() => {
     syncDashboardData();
   }, []);
+
+  // Unlock Lecturer Vault
+  const handleUnlockVault = (e: React.FormEvent) => {
+    e.preventDefault();
+    setVaultError('');
+
+    if (!inputVaultKey.trim()) {
+      setVaultError('Please enter an encryption key.');
+      return;
+    }
+
+    const testCiphertext = students[0]?.enc_name || courses[0]?.enc_course_code || '';
+    
+    if (testCiphertext && !cryptoUtils.verifyKey(testCiphertext, inputVaultKey.trim())) {
+      setVaultError('Invalid encryption key. Decryption failed.');
+      return;
+    }
+
+    setVaultKey(inputVaultKey.trim());
+    setIsVaultUnlocked(true);
+    setShowVaultModal(false);
+    setInputVaultKey('');
+  };
+
+  const handleLockVault = () => {
+    setIsVaultUnlocked(false);
+    setVaultKey('');
+  };
+
+  // Helper to format student label (Decrypted vs Ciphertext)
+  const renderStudentLabel = (s: StudentRosterItem) => {
+    if (isVaultUnlocked) {
+      const name = s.enc_name ? cryptoUtils.decryptPayload(s.enc_name, vaultKey) : s.name;
+      const matric = s.enc_matric_no ? cryptoUtils.decryptPayload(s.enc_matric_no, vaultKey) : s.matric_no;
+      return `${name} — [${matric}]`;
+    }
+    return `${s.enc_name || s.name} — [${s.enc_matric_no || s.matric_no}]`;
+  };
+
+  // Helper to format course label (Decrypted vs Ciphertext)
+  const renderCourseLabel = (c: Course) => {
+    if (isVaultUnlocked) {
+      const code = c.enc_course_code ? cryptoUtils.decryptPayload(c.enc_course_code, vaultKey) : c.course_code;
+      const title = c.enc_course_title ? cryptoUtils.decryptPayload(c.enc_course_title, vaultKey) : c.course_title;
+      return `${code} — ${title}`;
+    }
+    return `${c.enc_course_code || c.course_code} — ${c.enc_course_title || c.course_title}`;
+  };
 
   const handleScoreSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,10 +120,10 @@ export default function UnifiedAdminDashboard() {
         semester: scoreForm.semester,
         academic_year: scoreForm.academic_year,
       });
-      setMsg({ type: 'success', text: 'Academic result points committed to Postgres database pool successfully.' });
+      setMsg({ type: 'success', text: 'Academic result points committed to database successfully.' });
       setScoreForm(prev => ({ ...prev, student_id: '', ca_score: '', exam_score: '' }));
     } catch (err: any) {
-      setMsg({ type: 'error', text: err.message || 'Error processing structural write execution boundaries.' });
+      setMsg({ type: 'error', text: err.message || 'Error processing score submission.' });
     } finally {
       setSubmitting(false);
     }
@@ -92,9 +142,9 @@ export default function UnifiedAdminDashboard() {
       });
       setMsg({ type: 'success', text: `New course metric ${courseForm.course_code.toUpperCase()} initialized into catalog index.` });
       setCourseForm({ course_code: '', course_title: '', unit_counts: '3' });
-      await syncDashboardData(); // Refresh list parameters live
+      await syncDashboardData();
     } catch (err: any) {
-      setMsg({ type: 'error', text: err.message || 'Error injecting course paper allocation parameters.' });
+      setMsg({ type: 'error', text: err.message || 'Error creating course.' });
     } finally {
       setSubmitting(false);
     }
@@ -106,19 +156,19 @@ export default function UnifiedAdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans">
+    <div className="min-h-screen bg-[#0B0F19] text-gray-100 font-sans pb-12">
       {/* NAVBAR LAYER */}
       <nav className="border-b border-gray-800 bg-[#111827]/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7]"></span>
             <h1 className="font-bold tracking-tight text-lg bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-              Admin Terminal Console
+              Lecturer & Admin Terminal
             </h1>
           </div>
           <button
             onClick={handleLogout}
-            className="text-xs font-semibold px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:bg-red-950/30 hover:border-red-900 hover:text-red-400 transition-all"
+            className="text-xs font-semibold px-4 py-2 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 hover:bg-red-950/30 hover:border-red-900 hover:text-red-400 transition-all cursor-pointer"
           >
             Revoke Access Session
           </button>
@@ -126,21 +176,64 @@ export default function UnifiedAdminDashboard() {
       </nav>
 
       {/* WORKSPACE AREA */}
-      <main className="max-w-3xl mx-auto px-6 py-12 space-y-8">
+      <main className="max-w-3xl mx-auto px-6 py-10 space-y-6">
+
+        {/* LECTURER DECRYPTION VAULT BANNER */}
+        <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg transition-all ${
+          isVaultUnlocked 
+            ? 'bg-emerald-950/30 border-emerald-800/80 text-emerald-300' 
+            : 'bg-purple-950/30 border-purple-800/80 text-purple-300'
+        }`}>
+          <div className="flex items-center gap-3">
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold text-lg ${
+              isVaultUnlocked ? 'bg-emerald-500/20 text-emerald-400' : 'bg-purple-500/20 text-purple-400'
+            }`}>
+              {isVaultUnlocked ? '🔓' : '🔒'}
+            </div>
+            <div>
+              <h3 className="font-bold text-sm">
+                {isVaultUnlocked ? 'Lecturer Vault Unlocked (Plain Text View Active)' : 'Encrypted Storage Mode (Ciphertexts Displayed)'}
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {isVaultUnlocked 
+                  ? 'All student profiles and course records are decrypted locally using your key.' 
+                  : 'Data is protected. Enter your encryption key to view decrypted records.'}
+              </p>
+            </div>
+          </div>
+
+          {isVaultUnlocked ? (
+            <button
+              onClick={handleLockVault}
+              className="px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-xs font-semibold text-gray-200 rounded-xl border border-gray-700 transition-all cursor-pointer whitespace-nowrap"
+            >
+              🔒 Lock Vault View
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowVaultModal(true)}
+              className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl shadow-lg transition-all cursor-pointer whitespace-nowrap"
+            >
+              🔓 Enter Key to Decrypt Data
+            </button>
+          )}
+        </div>
 
         {/* TAB CONTROLS SELECTOR */}
         <div className="flex bg-[#111827] border border-gray-800 p-1.5 rounded-2xl max-w-sm">
           <button
             onClick={() => { setActiveTab('scores'); setMsg({ type: '', text: '' }); }}
-            className={`flex-1 py-2.5 text-xs font-medium rounded-xl transition-all ${activeTab === 'scores' ? 'bg-[#1F2937] text-purple-400 shadow-md border border-gray-700' : 'text-gray-400 hover:text-gray-200'
-              }`}
+            className={`flex-1 py-2.5 text-xs font-medium rounded-xl transition-all cursor-pointer ${
+              activeTab === 'scores' ? 'bg-[#1F2937] text-purple-400 shadow-md border border-gray-700' : 'text-gray-400 hover:text-gray-200'
+            }`}
           >
             Compute Results Engine
           </button>
           <button
             onClick={() => { setActiveTab('courses'); setMsg({ type: '', text: '' }); }}
-            className={`flex-1 py-2.5 text-xs font-medium rounded-xl transition-all ${activeTab === 'courses' ? 'bg-[#1F2937] text-purple-400 shadow-md border border-gray-700' : 'text-gray-400 hover:text-gray-200'
-              }`}
+            className={`flex-1 py-2.5 text-xs font-medium rounded-xl transition-all cursor-pointer ${
+              activeTab === 'courses' ? 'bg-[#1F2937] text-purple-400 shadow-md border border-gray-700' : 'text-gray-400 hover:text-gray-200'
+            }`}
           >
             Course Allocation Registry
           </button>
@@ -148,8 +241,9 @@ export default function UnifiedAdminDashboard() {
 
         {/* NOTIFICATION LAYER */}
         {msg.text && (
-          <div className={`p-4 rounded-xl border text-xs font-medium tracking-wide animate-fadeIn ${msg.type === 'success' ? 'bg-green-950/30 border-green-800/60 text-green-400' : 'bg-red-950/30 border-red-800/60 text-red-400'
-            }`}>
+          <div className={`p-4 rounded-xl border text-xs font-medium tracking-wide animate-fadeIn ${
+            msg.type === 'success' ? 'bg-green-950/30 border-green-800/60 text-green-400' : 'bg-red-950/30 border-red-800/60 text-red-400'
+          }`}>
             {msg.text}
           </div>
         )}
@@ -164,17 +258,17 @@ export default function UnifiedAdminDashboard() {
 
             <form onSubmit={handleScoreSubmit} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {/* 🎯 UPGRADED STUDENT SELECTION DROPDOWN (WIDER & PADDED FOR MOBILE VIEWPORTS) */}
+                {/* STUDENT SELECTION DROPDOWN */}
                 <div className="w-full">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
-                    Select Target Student
+                    Select Target Student {isVaultUnlocked ? '🔓' : '🔒 (Encrypted)'}
                   </label>
                   <div className="relative">
                     <select
                       required
                       value={scoreForm.student_id}
                       onChange={e => setScoreForm({ ...scoreForm, student_id: e.target.value })}
-                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto"
+                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto font-mono"
                     >
                       <option value="" className="text-gray-400 bg-[#111827]">
                         Choose student roster profile...
@@ -183,26 +277,26 @@ export default function UnifiedAdminDashboard() {
                         <option
                           key={s.student_id}
                           value={s.student_id}
-                          className="text-gray-200 bg-[#111827] py-3 my-1 checked:bg-purple-600 focus:bg-purple-600 block"
+                          className="text-gray-200 bg-[#111827] py-3 my-1 block"
                         >
-                          {s.name} &nbsp;—&nbsp; [{s.matric_no}]
+                          {renderStudentLabel(s)}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* 🎯 UPGRADED COURSE ALLOCATION DROPDOWN (WIDER & PADDED FOR MOBILE VIEWPORTS) */}
+                {/* COURSE ALLOCATION DROPDOWN */}
                 <div className="w-full">
                   <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2.5">
-                    Academic Course Allocation
+                    Academic Course Allocation {isVaultUnlocked ? '🔓' : '🔒 (Encrypted)'}
                   </label>
                   <div className="relative">
                     <select
                       required
                       value={scoreForm.course_id}
                       onChange={e => setScoreForm({ ...scoreForm, course_id: e.target.value })}
-                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto"
+                      className="w-full bg-[#1F2937] hover:bg-[#28354b] border border-gray-700 text-white font-medium text-sm rounded-xl px-4 py-3.5 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all cursor-pointer appearance-auto font-mono"
                     >
                       <option value="" className="text-gray-400 bg-[#111827]">
                         Select validated course...
@@ -213,7 +307,7 @@ export default function UnifiedAdminDashboard() {
                           value={c.id}
                           className="text-gray-200 bg-[#111827] py-3 block"
                         >
-                          {c.course_code} &nbsp;—&nbsp; {c.course_title}
+                          {renderCourseLabel(c)}
                         </option>
                       ))}
                     </select>
@@ -337,6 +431,66 @@ export default function UnifiedAdminDashboard() {
           </div>
         )}
       </main>
+
+      {/* LECTURER ENCRYPTION KEY MODAL */}
+      {showVaultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-[#111827] border border-gray-800 rounded-2xl p-6 shadow-2xl space-y-5 animate-fadeIn">
+            <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🔑</span>
+                <h3 className="font-bold text-white text-base">Lecturer Encryption Key</h3>
+              </div>
+              <button
+                onClick={() => setShowVaultModal(false)}
+                className="text-gray-400 hover:text-white text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-400">
+              Enter your Master Secret Encryption Key to decrypt student identity profiles and course records on your screen.
+            </p>
+
+            {vaultError && (
+              <div className="p-3 rounded-xl bg-red-950/40 border border-red-800 text-red-400 text-xs">
+                {vaultError}
+              </div>
+            )}
+
+            <form onSubmit={handleUnlockVault} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 uppercase mb-2">Master Key Passphrase</label>
+                <input
+                  type="password"
+                  required
+                  value={inputVaultKey}
+                  onChange={e => setInputVaultKey(e.target.value)}
+                  placeholder="12345678901234567890123456789012"
+                  className="w-full bg-[#1F2937] border border-gray-700 rounded-xl px-4 py-3 text-white text-sm focus:border-purple-500 font-mono"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVaultModal(false)}
+                  className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold uppercase rounded-xl shadow-lg transition-all"
+                >
+                  Decrypt Vault
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

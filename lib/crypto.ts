@@ -1,44 +1,50 @@
 // lib/crypto.ts
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY =
-  process.env.NEXT_PUBLIC_ENCRYPTION_KEY;
-
 export const cryptoUtils = {
   /**
-   * Encrypts plain text password into an AES Ciphertext block
+   * Decrypts AES-256-CBC hex string (format "ivHex:ciphertextHex") with provided secret key
    */
-  encryptPassword: (password: string): string => {
+  decryptPayload: (encryptedText: string, secretKey: string): string => {
+    if (!encryptedText || typeof encryptedText !== "string") return "";
+    if (!encryptedText.includes(":")) return encryptedText; // Already plain text or unencrypted
+
     try {
-      return CryptoJS.AES.encrypt(password, SECRET_KEY).toString();
+      const [ivHex, cipherHex] = encryptedText.split(":");
+      if (!ivHex || !cipherHex) return encryptedText;
+
+      const keyWords = CryptoJS.enc.Utf8.parse(secretKey);
+      const ivWords = CryptoJS.enc.Hex.parse(ivHex);
+      const cipherWords = CryptoJS.enc.Hex.parse(cipherHex);
+
+      const cipherParams = CryptoJS.lib.CipherParams.create({
+        ciphertext: cipherWords,
+      });
+
+      const decrypted = CryptoJS.AES.decrypt(cipherParams, keyWords, {
+        iv: ivWords,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7,
+      });
+
+      const plainText = decrypted.toString(CryptoJS.enc.Utf8);
+      return plainText || encryptedText;
     } catch (error) {
-      console.error("Crypto-JS Encryption Error:", error);
-      return "";
+      return encryptedText;
     }
   },
 
   /**
-   * Encrypts a raw string
+   * Verifies if a given secret key can successfully decrypt a ciphertext payload
    */
-  encryptString: (plainText: string): string => {
+  verifyKey: (sampleCiphertext: string, secretKey: string): boolean => {
+    if (!sampleCiphertext || !sampleCiphertext.includes(":")) return true;
     try {
-      return CryptoJS.AES.encrypt(plainText, SECRET_KEY).toString();
-    } catch (error) {
-      console.error("Frontend Encryption Error:", error);
-      return "";
-    }
-  },
-
-  /**
-   * Decrypts an AES Ciphertext block back to plain text
-   */
-  decryptString: (cipherText: string): string => {
-    try {
-      const bytes = CryptoJS.AES.decrypt(cipherText, SECRET_KEY);
-      return bytes.toString(CryptoJS.enc.Utf8);
-    } catch (error) {
-      console.error("Frontend Decryption Error:", error);
-      return "";
+      const decrypted = cryptoUtils.decryptPayload(sampleCiphertext, secretKey);
+      return Boolean(decrypted && decrypted !== sampleCiphertext && !decrypted.includes(":\u0000"));
+    } catch {
+      return false;
     }
   },
 };
+

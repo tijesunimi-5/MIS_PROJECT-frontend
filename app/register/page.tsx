@@ -24,12 +24,9 @@ export default function StudentRegisterPage() {
     setError('');
 
     try {
-      // 🔒 Native Browser Base64 Encoding 
-      const base64Password = window.btoa(form.password);
-
       const payload = {
         ...form,
-        password: base64Password,
+        password: form.password,
         role: 'student', // 🔒 Securely hardcoded to student on submission
         current_level: Number(form.current_level),
       };

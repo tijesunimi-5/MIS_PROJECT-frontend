@@ -21,12 +21,9 @@ export default function AdminSecureRegisterPage() {
     setError('');
 
     try {
-      // 🔒 Native Browser Base64 Encoding
-      const base64Password = window.btoa(form.password);
-
       const payload = {
         ...form,
-        password: base64Password,
+        password: form.password,
         role: 'admin', // 🔒 Securely locked to administrative clearance boundaries
       };
 

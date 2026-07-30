@@ -1,5 +1,5 @@
 // lib/api.ts
-import { AuthResponse, Course, ReportCardResponse } from "../types";
+import { AuthResponse, Course, ReportCardResponse, StudentRosterItem } from "../types";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -52,11 +52,12 @@ export const api = {
   // 2. Students Roster Namespace (Separated from auth block correctly)
   students: {
     getRoster: () =>
-      request<{ student_id: number; name: string; matric_no: string }[]>(
+      request<StudentRosterItem[]>(
         "/results/students-roster",
         { method: "GET" },
       ),
   },
+
 
   // 3. Courses Namespace
   courses: {

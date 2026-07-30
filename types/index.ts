@@ -23,6 +23,16 @@ export interface Course {
   course_code: string;
   course_title: string;
   unit_counts: number;
+  enc_course_code?: string;
+  enc_course_title?: string;
+}
+
+export interface StudentRosterItem {
+  student_id: number;
+  name: string;
+  matric_no: string;
+  enc_name?: string;
+  enc_matric_no?: string;
 }
 
 export interface ResultRecord {
@@ -39,6 +49,11 @@ export interface ResultRecord {
   course_code: string;
   course_title: string;
   unit_counts: number;
+  enc_letter_grade?: string;
+  enc_semester?: string;
+  enc_academic_year?: string;
+  enc_course_code?: string;
+  enc_course_title?: string;
 }
 
 export interface TermSummary {
@@ -55,3 +70,4 @@ export interface ReportCardResponse {
     [semesterKey: string]: TermSummary;
   };
 }
+
